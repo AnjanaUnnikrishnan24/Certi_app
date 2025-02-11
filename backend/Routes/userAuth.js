@@ -2,24 +2,32 @@ import { Router } from "express";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import {user} from '../Models/userDetails.js'
 
 dotenv.config();
 
 const userauth=Router();
-const user = new Map();
 
 userauth.post('/signUp',async(req,res)=>{
     try{
         const {UserName,FullName,Email,UserRole,Password} = req.body;
         console.log(FullName);
    
-        if(user.get(UserName)){
-            res.status(400).send("Username already exist") ;
+        const newPassword =await bcrypt.hash(Password,10);
+        console.log(newPassword);
+        const existinguser = await user.findOne({userName:UserName})
+        if(existinguser){
+            res.status(401).send("User already exit");
         }
         else{
-            const newPassword =await bcrypt.hash(Password,10);
-            console.log(newPassword);
-            user.set(UserName,{FullName,Email,UserRole,Password:newPassword});
+            const newuser = new user({
+                userRole:UserRole,
+                userName:UserName,
+                fullName:FullName,
+                email:Email,
+                password:newPassword
+            });
+            await newuser.save();
             res.status(201).send("Signed-up successfully")
         }}
     catch{
@@ -30,16 +38,16 @@ userauth.post('/signUp',async(req,res)=>{
 userauth.post('/login',async(req,res)=>{
     try{
         const {UserName,Password}=req.body;
-        const result = user.get(UserName);
+        const result = await user.findOne({userName:UserName});
         if(!result){
             res.status(400).send("Enter a valid username");
         }
         else{
-            console.log(result.Password);
-            const valid =await bcrypt.compare(Password,result.Password);
+            console.log(result.password);
+            const valid =await bcrypt.compare(Password,result.password);
             console.log(valid);
             if(valid){
-                const token = jwt.sign({UserName:UserName,UserRole:result.UserRole},process.env.SECRET_KEY,{expiresIn:'4h'});
+                const token = jwt.sign({UserName:UserName,UserRole:result.userRole},process.env.SECRET_KEY,{expiresIn:'4h'});
                 console.log(token);
                 res.cookie('authToken',token,
                 {
@@ -59,6 +67,7 @@ userauth.post('/login',async(req,res)=>{
 
 userauth.get('/logout',(req,res)=>{
     res.clearCookie('authToken');
+    console.log("User logged out successfully");
     res.status(200).json({msg:"Successfully logged out"})
 })
 
