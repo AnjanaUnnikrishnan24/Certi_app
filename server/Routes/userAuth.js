@@ -47,7 +47,7 @@ userauth.post('/login',async(req,res)=>{
             const valid =await bcrypt.compare(Password,result.password);
             console.log(valid);
             if(valid){
-                const token = jwt.sign({UserName:UserName,UserRole:result.userRole},process.env.SECRET_KEY,{expiresIn:'4h'});
+                const token = jwt.sign({ UserName:UserName,UserRole:result.userRole},process.env.SECRET_KEY,{expiresIn:'4h'});
                 console.log(token);
                 res.cookie('authToken',token,
                 {
