@@ -20,7 +20,8 @@ const authenticate=(req,res,next)=>{
         }
         else{
             res.status(401).send("Unauthorized access");
-        }}
+        }
+    }
     else{
         res.status(401).send("Unauthorized access");
     }

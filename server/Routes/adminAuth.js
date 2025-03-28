@@ -1,48 +1,50 @@
 import { Router } from "express";
-import authenticate from "../Middleware/authAdmin.js";
-import adminCheck from "../Middleware/adminCheck.js";
 import {Certificate} from "../Models/certificate.js"
 
 const adminAuth = Router();
 
-adminAuth.post("/issueCertificate", authenticate, adminCheck, async(req, res) => {
+adminAuth.post("/issueCertificate", async (req, res) => {
     try {
-        const { CertificateId, Course, CandidateName, Grade, IssueDate } = req.body;
-        console.log(CertificateId);
-        const oldCertificate = await Certificate.findOne({cId:CertificateId})
-        if(oldCertificate){
-            res.status(401).send("Certificate in this Id already exist");
-        }else{
-            const newCertificate = new Certificate({
-                cId:CertificateId,
-                course:Course,
-                cName:CandidateName,
-                grade:Grade,
-                issueDate:IssueDate
-            });
-            await newCertificate.save();
-            res.status(201).send("Certificate issued successfully")
+        const { cId, course, cName, grade, issueDate } = req.body; // Fix: Match schema keys
+        console.log("Request Body:", req.body); 
+
+        const oldCertificate = await Certificate.findOne({ cId });
+
+        if (oldCertificate) {
+            return res.status(400).json({ msg: "Certificate with this ID already exists" });
         }
-    } catch {
-        res.status(500).json({ msg: "Internal Server Error" });
+
+        const newCertificate = new Certificate({ 
+            cId, 
+            course, 
+            cName, 
+            grade, 
+            issueDate 
+        });
+        await newCertificate.save();
+
+        res.status(201).json({ msg: "Certificate issued successfully" });
+    } catch (error) {
+        console.error("Error issuing certificate:", error); // Fix: Log error details
+        res.status(500).json({ msg: "Internal Server Error", error: error.message });
     }
 });
 
 adminAuth.get('/viewCertificate', async (req, res) => {
     try {
-        const { CertificateId } = req.query; 
+        const { cId } = req.query; 
 
-        if (!CertificateId) {
+        if (!cId) {
             return res.status(400).json({ msg: "CertificateId is required" });
         }
 
-        const viewCerti = await Certificate.findOne({ cId: CertificateId });
+        const viewCerti = await Certificate.findOne({ cId });
 
         if (!viewCerti) { 
             res.status(404).json({ msg: "Certificate doesn't exist" });   
         } 
             
-        res.status(200).json(viewCerti);  
+        res.json(viewCerti);  
     } catch (error) {
         console.error("Error fetching certificate:", error);
         res.status(500).json({ msg: "Internal Server Error", error: error.message });

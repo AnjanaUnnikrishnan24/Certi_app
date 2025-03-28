@@ -10,44 +10,45 @@ const userauth=Router();
 
 userauth.post('/signUp',async(req,res)=>{
     try{
-        const {UserName,FullName,Email,UserRole,Password} = req.body;
-        console.log(FullName);
+        const {userName,fullName,email,password} = req.body;
+        console.log(fullName);
    
-        const newPassword =await bcrypt.hash(Password,10);
+        const newPassword =await bcrypt.hash(password,10);
         console.log(newPassword);
-        const existinguser = await user.findOne({userName:UserName})
+        const existinguser = await user.findOne({userName:userName})
         if(existinguser){
             res.status(401).send("User already exit");
         }
         else{
             const newuser = new user({
-                userRole:UserRole,
-                userName:UserName,
-                fullName:FullName,
-                email:Email,
+                userName,
+                fullName,
+                email,
                 password:newPassword
             });
             await newuser.save();
-            res.status(201).send("Signed-up successfully")
+            console.log(" User signed up successfully:", newuser);
+            res.status(201).json({message:"Signed-up successfully"})
         }}
-    catch{
-        res.status(500).send("Internal Server error");
+    catch (error){
+        console.error("Signup Error:", error);
+        res.status(500).json({error:"Internal Server error"});
     } 
 });
 
 userauth.post('/login',async(req,res)=>{
     try{
-        const {UserName,Password}=req.body;
-        const result = await user.findOne({userName:UserName});
+        const {userName,password}=req.body;
+        const result = await user.findOne({userName});
         if(!result){
-            res.status(400).send("Enter a valid username");
+            res.status(400).json({ msg: "Enter a valid username" });
         }
         else{
             console.log(result.password);
-            const valid =await bcrypt.compare(Password,result.password);
+            const valid =await bcrypt.compare(password,result.password);
             console.log(valid);
             if(valid){
-                const token = jwt.sign({ UserName:UserName,UserRole:result.userRole},process.env.SECRET_KEY,{expiresIn:'4h'});
+                const token = jwt.sign({ userName },process.env.SECRET_KEY,{expiresIn:'4h'});
                 console.log(token);
                 res.cookie('authToken',token,
                 {
@@ -56,12 +57,12 @@ userauth.post('/login',async(req,res)=>{
                 res.status(200).json({message:"Logged in successfully"});
             }
             else{
-                res.status(401).send("Unauthorized access");
+                res.status(401).json({message:"Unauthorized access"});
             }
          }
     }
     catch{
-        res.status(500).send("Internal Server Error")
+        res.status(500).json({message:"Internal Server Error"})
     }
 })
 

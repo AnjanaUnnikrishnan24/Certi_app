@@ -9,5 +9,5 @@ const certiDetails = new Schema({
     issueDate:{type:String,required:true}
 });
 
-const Certificate = model('certiDetails',certiDetails)
+const Certificate = model('Certificate',certiDetails)
 export {Certificate}
